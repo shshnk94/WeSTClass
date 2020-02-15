@@ -47,6 +47,22 @@ def train_word2vec(sentence_matrix, vocabulary_inv, dataset_name, mode='skipgram
     return embedding_weights
 
 
+def load_embeddings(filename):
+    
+    with open(filename,'r') as handle:
+        embedding_weights = {}
+
+        for line in handle:
+        
+            content = line.split(' ')
+            word = content[0]
+            embedding = np.array([float(val) for val in content[1:]])
+            embedding_weights[word] = embedding
+
+    print("Done.", len(embedding_weights)," words loaded!")
+
+    return embedding_weights
+
 def write_output(write_path, y_pred, perm):
     invperm = np.zeros(len(perm), dtype='int32')
     for i,v in enumerate(perm):
@@ -99,6 +115,11 @@ if __name__ == "__main__":
     ### Case study settings ###
     # trained model directory: None (default)
     parser.add_argument('--trained_weights', default=None)
+    
+    ### Using pre-trained word embeddings
+    parser.add_argument('--word_embedding_dim', type=int, default=100)
+    parser.add_argument('--embeddings', type=int, default=0)
+    parser.add_argument('--emb_path', default=None)
 
     args = parser.parse_args()
     print(args)
@@ -108,7 +129,7 @@ if __name__ == "__main__":
     gamma = args.gamma
     delta = args.delta
 
-    word_embedding_dim = 100
+    word_embedding_dim = args.word_embedding_dim
     
     if args.model == 'cnn':
 
@@ -182,8 +203,16 @@ if __name__ == "__main__":
         sequence_length = [doc_len, sent_len]
     
     print("\n### Input preparation ###")
-    embedding_weights = train_word2vec(x, vocabulary_inv, args.dataset)
-    embedding_mat = np.array([np.array(embedding_weights[word]) for word in vocabulary_inv])
+    if args.embeddings:
+        filename = args.emb_path
+        embedding_weights = load_embeddings(filename) 
+    else:
+        embedding_weights = train_word2vec(x, vocabulary_inv, args.dataset)
+
+    embedding_mat = np.zeros(vocabulary_inv, word_embedding_dim)
+    for index in range(vocabulary_inv):
+        if vocabulary_inv[index] in embedding_weights:
+            embedding_mat[index] = embedding_weights[vocabulary_inv[index]]
     
     wstc = WSTC(input_shape=x.shape, n_classes=n_classes, y=y, model=args.model,
                 vocab_sz=vocab_sz, embedding_matrix=embedding_mat, word_embedding_dim=word_embedding_dim)
