@@ -209,8 +209,8 @@ if __name__ == "__main__":
     else:
         embedding_weights = train_word2vec(x, vocabulary_inv, args.dataset)
 
-    embedding_mat = np.zeros(vocabulary_inv, word_embedding_dim)
-    for index in range(vocabulary_inv):
+    embedding_mat = np.random.randn(len(vocabulary_inv), word_embedding_dim)
+    for index in range(len(vocabulary_inv)):
         if vocabulary_inv[index] in embedding_weights:
             embedding_mat[index] = embedding_weights[vocabulary_inv[index]]
     
